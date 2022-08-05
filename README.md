@@ -1,4 +1,4 @@
-# Intro_to_Comp_Security_Final_Project
+# Intro-to-Comp-Security-Final-Project
 
 Class: Introduction to Computer Security  
 Assignment: Project  
