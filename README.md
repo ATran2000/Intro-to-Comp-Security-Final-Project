@@ -1,7 +1,12 @@
-Class: Introduction to Computer Security
-Assignment: Project
-Group: Eddie Tran, Alvin Tran, Joshua Hou
-Date: 12/14/2021
+# Intro_to_Comp_Security_Final_Project
+
+Class: Introduction to Computer Security  
+Assignment: Project  
+Group: Eddie Tran, Alvin Tran, Joshua Hou  
+Date: 12/14/2021  
+
+About:  
+Own implementation of Apple's AirDrop where you can securely send files to other clients on the server.  
 
 Steps To Use Code:
 1) First have the server.py file be in its own directory.
