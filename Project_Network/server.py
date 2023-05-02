@@ -1,10 +1,3 @@
-'''
-Class: Introduction to Computer Security
-Assignment: Project
-Team 3: Eddie Tran, Alvin Tran, Joshua Hou
-Date: 12/14/2021
-'''
-
 import socket
 import json
 import os

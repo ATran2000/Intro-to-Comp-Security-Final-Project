@@ -1,10 +1,5 @@
 # Intro-to-Comp-Security-Final-Project
 
-Class: Introduction to Computer Security  
-Assignment: Project  
-Group: Eddie Tran, Alvin Tran, Joshua Hou  
-Date: 12/14/2021  
-
 About:  
 Own implementation of Apple's AirDrop where you can securely send files to other clients on the server.  
 
