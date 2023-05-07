@@ -1,9 +1,15 @@
+# Alvin Tran
+# Intro to Computer Security: Final Project
+# 5/7/2023
+
+# for networking
 import socket
+
+# for json
 import json
 import os
 
 open("server_list.json", "a+") # opens server_list.json / creates if does not exist
-
 
 hostname = socket.gethostname() # returns name of device
 host = socket.gethostbyname(hostname) # returns ip address of the device

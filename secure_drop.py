@@ -1,3 +1,7 @@
+# Alvin Tran
+# Intro to Computer Security: Final Project
+# 5/7/2023
+
 # for json
 import json
 import os
@@ -7,7 +11,6 @@ import getpass
 import bcrypt
 
 # for encryption/decryption
-from Crypto import PublicKey
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
@@ -15,23 +18,33 @@ from Crypto.Random import get_random_bytes
 # for networking
 import socket
 
+# for concurrency
+import threading
+
+# for sending command
+send_request = False
+send_request_response = None
+
 # check json if there is an existing user
 def check_existing_user():
     file_path = "user.json"
-    if os.path.getsize(file_path) == 0:  # checks if there is an existing user, return False if no user
+    # checks if there is an existing user, return False if no user
+    if os.path.getsize(file_path) == 0:
         return False
     else:  # if there is an existing user, return True
         return True
 
 # register the user
 def register():
-    while True: # loops until correct input
+    while True:  # loops until correct input
         print("No users are registered with this client.")
         choice = input("Do you want to register a new user (y\\n)? ")
         if choice == "y":
-            user_data = get_user_data()  # user chooses to register, user will proceed to enter user data
-            write_json(user_data, "user_info")  # after successfully getting user data, will write the data in the json file
-            encryption() # encrypt the contacts json file even if there is nothing written in it
+            # user chooses to register, user will proceed to enter user data
+            user_data = get_user_data()
+            # after successfully getting user data, will write the data in the json file
+            write_json(user_data, "user_info")
+            encryption()  # encrypt the contacts json file even if there is nothing written in it
             break
         elif choice == "n":
             print("Thanks, have a good day. \nTerminating...")
@@ -43,12 +56,13 @@ def register():
 def get_user_data():
     name = input("\nEnter Full Name: ")
     email = input("Enter Email Address: ")
-    passwd = getpass.getpass("Enter Password: ")  # getpass makes it so password input is invisible on screen
-    while passwd_requirements(passwd) == False:  # will have the user input a password that satisfies the password requirements
-        passwd = getpass.getpass("Enter Password: ")
-    passwd_check = getpass.getpass("Re-enter Password: ")  # have user input password again
     user_data = {}
     while True:  # loop until the user correctly inputs the intended password two times to confirm the user's password
+        passwd = getpass.getpass("Enter Password: ")  # getpass makes it so password input is invisible on screen
+        while passwd_requirements(passwd) == False:  # will have the user input a password that satisfies the password requirements
+            passwd = getpass.getpass("Enter Password: ")
+        passwd_check = getpass.getpass("Re-enter Password: ")  # have user input password again
+
         if passwd_check == passwd:  # match
             passwd = passwd.encode('utf-8')  # encode to bytes
             hashed_passwd = bcrypt.hashpw(passwd, bcrypt.gensalt(10))  # apply bcrypt hash
@@ -58,8 +72,6 @@ def get_user_data():
             break
         else:
             print("Passwords did not match.\n")
-            passwd = getpass.getpass("Enter Password: ")  # let user reenter password again after failing the password check
-            passwd_check = getpass.getpass("Re-enter Password: ")
     return user_data
 
 # password reqiurements for security
@@ -81,6 +93,7 @@ def passwd_requirements(passwd):
         return True
     else:
         print("\nInvalid Password Requirements")
+        print("Must have a length greater than 7")
         print("Must contain at least 1 lowercase")
         print("Must contain at least 1 uppercase")
         print("Must contain at least 1 digit")
@@ -121,9 +134,9 @@ def authenticate_user(email, passwd):
 def interface(s, host, port):
     print("Type \"help\" For Commands.\n")
 
-    # Below, we tried implementing tcp to the client so that they are able to communicates with other clients
-    # But we were not able to solve how to do both the accept function for connecting with other clients and get user input at the same time
-    '''
+    t_listening = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    t_listening.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+
     msg = "Receiving Port"
     msg = msg.encode("utf-8")
     s.sendto(msg, (host, port))
@@ -136,12 +149,12 @@ def interface(s, host, port):
     user_port = data.decode("utf-8")
     user_port = int(user_port)
 
-    t.bind((host, user_port)) # binds address:(hostname,port#) to socket
-    t.listen(5)
-    t.accept()
-    '''
-    
+    t_listening.bind((host, user_port)) # binds address:(hostname,port#) to socket
+    threading.Thread(target=turn_on_tcp, args=(t_listening,)).start()
+
     while True:
+        global send_request, send_request_response
+
         command = input("secure_drop> ").split(' ')
         if command[0] == "help":
             help()
@@ -151,19 +164,61 @@ def interface(s, host, port):
             list(s, host, port)
         elif command[0] == "send":
             send(command[1], command[2], s, host, port)
-            # send(command[1], command[2], s, t, host, port) #this send function is if we got tcp working
+        elif command[0][0] == "y":
+            print("  A file has been received!")
+            if send_request:
+                send_request_response = True
+        elif command[0][0] == "n":
+            if send_request:
+                send_request_response = False
         elif command[0] == "exit":
             encryption()  # when exiting program, encrypt the contacts json file
             remove_user_from_server(s, host, port) # when exiting, remove the user from the server list
             s.close()
+            t_listening.close()
+            break
+
+def turn_on_tcp(t_listening):
+    t_listening.listen()
+
+    while True:
+        global send_request, send_request_response
+        try:
+            client, address = t_listening.accept()
+            task, addr = client.recvfrom(1024)
+            task = task.decode("utf-8")
+            if task == "Sending Request":
+                send_request = True
+                data, addr = client.recvfrom(1024)
+                data = data.decode("utf-8")
+                print(f'\n{data} ', end="")
+
+                while True:
+                    if (send_request_response == True):
+                        client.send(bytes("y", "utf-8"))
+                        
+                        file_name, addr = client.recvfrom(1024)
+                        file_name = file_name.decode("utf-8")
+                        file_data = client.recv(1024)
+                        with open(file_name, "wb") as file:
+                            file.write(file_data)
+                        break
+                    elif (send_request_response == False):
+                        client.send(bytes("n", "utf-8"))
+                        break
+
+            send_request = False
+            send_request_response = None
+            client.close()
+        except:
             break
 
 # help function that displays all of the commands
 def help():
-    print("  \"add\"  -> Add a new contact")
-    print("  \"list\" -> List all online contacts")
-    print("  \"send\" -> Transfer file to contact")
-    print("  \"exit\" -> Exit SecureDrop")
+    print("  \"add\"  -> Add a new contact.")
+    print("  \"list\" -> List all online contacts. Both contacts must be friends with each other.")
+    print("  \"send\" -> Transfer file to contact. [format: send contact_email file_path]")
+    print("  \"exit\" -> Exit SecureDrop.")
 
 # add contacts to client's contacts json file and server list json file
 def add(s, host, port):
@@ -284,16 +339,36 @@ def send(email, file, s, host, port):
 
         if data != "false":
             contact_port = int(data)
-            '''
-            t.connect((host, contact_port))
+            
+            t_sending = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            t_sending.connect((host, contact_port))
             with open("user.json", "r+") as f:
                 file_data = json.load(f)
                 user_name = file_data["user_info"][0]["name"]
 
             user_email = user_email.decode("utf-8")
-            msg = "Contact '" + user_name + "<" + user_email + ">' is sending a file. Accept (y/n)?"
-            t.send(bytes(msg, "utf-8"))
-            '''
+            email = email.decode("utf-8")
+            msg = "Sending Request"
+            t_sending.send(bytes(msg, "utf-8"))
+            msg = "  Contact '" + user_name + "<" + user_email + ">' is sending a file. Accept (y/n)?"
+            t_sending.send(bytes(msg, "utf-8"))
+            print("  Awaiting response from user, " + email + ".")
+
+            response, addr = t_sending.recvfrom(1024)
+            response = response.decode("utf-8")
+
+            if response == "y":
+                print("  User, " + email + ", accepted the send request.")
+                print("  File has been sent!")
+                file_name = file
+                t_sending.send(bytes(file_name, "utf-8"))
+                with open(file, "rb") as file:
+                    file_data = file.read()
+                    t_sending.sendall(file_data)
+            elif response == "n":
+                print("  User, " + email + ", declined the send request.")
+        
+            t_sending.close()
 
 # encryption function to encrypt the contacts json file
 def encryption():
@@ -367,7 +442,7 @@ def add_user_to_server(s, host, port):
         s.sendto(user_email, (host, port)) # sends user_email to server via udp
     
     file_path = "contacts.json"
-    if os.path.getsize(file_path) == 0:  # checks if there is anything in the server_list json file
+    if os.path.getsize(file_path) == 0:  # checks if there is anything in the contacts json file
         # if there isn't anything, just send contact_info as empty
         file_data = {}
         file_data["contact_info"] = []
@@ -403,10 +478,8 @@ def main():
     host = socket.gethostbyname(hostname) # returns ip address of the device
     port = 5555 # port number to be used to communicate with server
 
-    s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM) # AF_INET is family of protocols. SOCK_DGRAM is a type that for connectionless protocols
-    #t = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    #t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-    
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # AF_INET is family of protocols. SOCK_DGRAM is a type for connectionless protocols
+
     open("user.json", "a+")
     open("contacts.json", "a+")
     if check_existing_user() == False:
@@ -414,8 +487,8 @@ def main():
     else:
         login()  # is existing user, go to login
         add_user_to_server(s, host, port) # adds user information to server after logging in
-        interface(s, host, port)  # after successful login, proceed to the interface
-        #interface(s, t, host, port)  # this was if we got tcp working
+        #interface(s, host, port)  # after successful login, proceed to the interface
+        interface(s, host, port)  # this was if we got tcp working
 
 # run main
 if __name__ == "__main__":
