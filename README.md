@@ -21,8 +21,8 @@ Note:
 
 Interesting Things From Project:
 - bcrypt is used to encrypt the password, so if you have created a user in a secure_drop program and check the user.json file, you should see that the value for the key password is encrypted.
-- The contacts.json file is encrypted. Whenever you create a new user and is not logged into the program, your contacts list is hidden from anyone that wants to access it. It will only be readble
+- The contacts.json file is encrypted. Whenever you create a new user while not logged into the program, your contacts list is hidden from anyone that wants to access it. It will only be readble
   to the user when the user logs into the program.
 - The server_list.json file actively adds and removes users from the json object when the users logs into the program and exits.
 - The contacts.json and server_list.json file actively displays new users in the json object when the user adds a new contact.
-- The list command only displays contacts that the user has added and whom added the user back. In addition, the contact only appears the contact is online and logged in.
+- The list command only displays contacts that the user has added and whom added the user back. In addition, the contact only appears if the contact is online and logged in.
