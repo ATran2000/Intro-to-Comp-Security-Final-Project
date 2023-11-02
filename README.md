@@ -4,7 +4,7 @@ About:
 Own implementation of Apple's AirDrop where you can securely send files to other clients on the server.
 
 For a visual representation of the project, check it out on the portfolio website! <br>
-Link to the website: [`https://avtran-portfolio.vercel.app/projects/securedrop`](https://avtran-portfolio.vercel.app/projects/securedrop)
+Link to the website: <a href="https://avtran-portfolio.vercel.app/projects/securedrop" target="_blank">https://avtran-portfolio.vercel.app/projects/securedrop</a>
 
 Steps To Use Code:  
 1) Download the project directory.  
